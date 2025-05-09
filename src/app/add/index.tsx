@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
 import { styles } from "./styles";
 import { colors } from "@/styles/colors";
+import { linkStorage } from "@/storage/link-storage";
 
 import { Categories } from "@/components/categories";
 import { Input } from "@/components/input";
@@ -12,15 +13,46 @@ import { Button } from "@/components/button";
 
 
 export default function Add() {
+  const [category, setCategory] = useState("");
 
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
 
-  function handleAdd() {
-    console.log(name, url);
+  async function handleAdd() {
+    try {
+      if (!category) {
+        return Alert.alert("Categoria", "Selecione uma categoria para continuar")
+      }
+
+      if (!name.trim()) {
+        return Alert.alert("Nome", "Informe o nome para continuar")
+      }
+
+      if (!url.trim()) {
+        return Alert.alert("URL", "Informe a URL para continuar")
+      }
+
+      await linkStorage.save({
+        id: new Date().getTime().toString(),
+        name,
+        url,
+        category,
+      })
+
+      Alert.alert("Sucesso", "Novo link salvo com sucesso", [
+        {
+          text: "Ok",
+          onPress: () => router.back()
+        }
+      ])
+
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível salvar o link")
+      console.log(error)
+    }
   }
 
-  return(
+  return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -31,15 +63,19 @@ export default function Add() {
       </View>
 
       <Text style={styles.label}>Selecione uma categoria</Text>
-      <Categories />
+      <Categories onChange={setCategory} selected={category} />
 
       <View style={styles.form}>
-        <Input placeholder="Nome" onChangeText={setName} autoCorrect/>
-        <Input placeholder="Url" onChangeText={setUrl} autoCorrect/>
-        <Button title="Adicionar" onPress={handleAdd}/>
+        <Input placeholder="Nome" onChangeText={setName} autoCorrect />
+        <Input 
+          placeholder="URL" 
+          onChangeText={setUrl} 
+          autoCorrect 
+          keyboardType="url"
+          autoCapitalize="none"
+        />
+        <Button title="Adicionar" onPress={handleAdd} />
       </View>
-
-      <Text>{name}</Text>
     </View>
   )
 }
